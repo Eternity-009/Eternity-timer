@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Digital Timer By Lavish - Master Edition</title>
+<link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --theme-bg: #7cb971;       
+            --lcd-text: #000000;       
+            --lcd-ghost: rgba(0, 0, 0, 0.025); 
+            --rim-color: #7cb971;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; overflow: hidden;
+        }
+
+        .device {
+            border-radius: 14px;
+            padding: 10px;
+            box-shadow: 0 0 0 2px var(--rim-color), 0 25px 55px rgba(0,0,0,0.95), inset 0 1.5px 1.5px rgba(255,255,255,0.15);
+            width: 96%;
+            max-width: 430px;
+            display: flex; flex-direction: column; gap: 8px;
+            transition: all 0.3s ease;
+            background: linear-gradient(145deg, #232528, #131416); 
+            border: 1px solid #101112;
+        }
+
+        .bezel {
+            background: #040405;
+            padding: 6px;
+            border-radius: 10px;
+            box-shadow: inset 0 3px 10px rgba(0,0,0,0.95);
+            display: flex; flex-direction: column;
+        }
+
+        .screen {
+            position: relative;
+            height: 160px;
+            border-radius: 6px;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            overflow: hidden; padding: 0 6px;
+            background-color: var(--theme-bg);
+            transition: background-color 0.3s ease;
+        }
+
+        .screen::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 60%);
+            pointer-events: none; z-index: 2;
+        }
+
+        .mode-indicator {
+            position: absolute; top: 8px; left: 12px;
+            font-size: 10px; font-weight: 900;
+            color: var(--lcd-text); letter-spacing: 1.5px; opacity: 0.85;
+        }
+
+        .display-container {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 90px; margin: 0 auto; gap: 2px; z-index: 1;
+        }
+
+        .digit { flex: 1; max-width: 46px; height: 100%; transform: skewX(-3deg); }
+        .digit.small { flex: 1; max-width: 34px; height: 68%; align-self: flex-end; margin-bottom: 6px; }
+        .colon-svg { flex: 0 0 12px; height: 100%; transform: skewX(-3deg); }
+
+        .seg { fill: var(--lcd-ghost); stroke: var(--lcd-ghost); stroke-width: 0.8; transition: fill 0.1s ease; }
+        .seg.on { fill: var(--lcd-text); stroke: var(--lcd-text); stroke-width: 0.8; }
+        
+        .colon-mark { fill: var(--lcd-text); stroke: var(--lcd-text); stroke-width: 0.5; }
+        .colon-mark.off { opacity: 0.05; }
+
+        .lap-container {
+            position: absolute; bottom: 6px; right: 12px;
+            font-family: monospace; font-size: 10px; color: var(--lcd-text);
+            font-weight: bold; text-align: right; max-height: 24px; width: 140px;
+            overflow-y: auto; opacity: 0.85; line-height: 1.1; z-index: 1;
+        }
+        .lap-container::-webkit-scrollbar { display: none; }
+
+        .brand-panel {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            margin: 2px 0; min-height: 20px;
+        }
+        
+        .hardware-brand {
+            font-size: 11px; font-weight: 900; letter-spacing: 2px; 
+            color: var(--rim-color);
+            text-shadow: 0 0 10px rgba(255,255,255,0.15);
+            text-transform: uppercase; cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .panel-icon {
+            width: 14px; height: 14px; 
+            fill: var(--rim-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .panel-icon.muted { fill: #33373e !important; opacity: 0.4; }
+
+        .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+
+        button {
+            background: linear-gradient(to bottom, #2f3236, #141517);
+            border: 1px solid #050607; color: #cbd5e1;
+            font-size: 10px; font-weight: 800; padding: 12px 0;
+            border-radius: 6px; cursor: pointer;
+            box-shadow: 0 2px 0 #000000, 0 3px 4px rgba(0,0,0,0.7);
+            text-transform: uppercase; text-align: center; line-height: 1.2;
+        }
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 0 #000000, 0 1px 2px rgba(0,0,0,0.6); color: #fff;
+        }
+
+        .modal {
+            position: absolute; inset: 0; background: #08090a; z-index: 10;
+            display: flex; flex-direction: column; padding: 6px; color: #fff;
+            transform: translateY(100%); transition: transform 0.2s ease-out;
+            border-radius: 5px; justify-content: space-between;
+        }
+        .modal.open { transform: translateY(0); }
+        
+        .modal-input-wrapper {
+            display: flex; align-items: center; justify-content: center;
+            background: #000; border: 1px solid #1a1c1e; border-radius: 4px; padding: 4px 0; gap: 2px;
+        }
+        .modal-input-wrapper input {
+            width: 55px; background: transparent; border: none;
+            color: #ff9f43; font-family: monospace; font-size: 24px;
+            font-weight: bold; text-align: center; outline: none;
+        }
+        .modal-input-wrapper span { font-family: monospace; font-size: 20px; color: #444; }
+        
+        .modal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; flex: 1; margin: 5px 0; }
+        .modal-grid button { background: linear-gradient(to bottom, #202325, #101112); font-size: 10px; padding: 0; box-shadow: none; }
+        .modal-grid button.btn-quick { background: linear-gradient(to bottom, #142233, #0a111a); color: #5ea1ff; }
+        .modal-grid button.btn-action { background: linear-gradient(to bottom, #3d1a1a, #1a0b0b); color: #ff5252; grid-column: span 4; height: 28px; }
+        
+        .modal-actions { display: flex; justify-content: space-between; gap: 4px; }
+        .modal-actions span { flex: 1; text-align: center; font-size: 11px; font-weight: bold; padding: 9px 0; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
+        .btn-cancel { background: #252729; color: #a0a5b5; }
+        .btn-ok { background: #143514; color: #52c452; }
+
+        @keyframes flash { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(0.3); } }
+        .flashing { animation: flash 0.3s infinite; }
+
+        /* Multi-Themes */
+        .device[data-theme="green"] { --theme-bg: #7cb971; --lcd-text: #000000; --lcd-ghost: rgba(0, 0, 0, 0.02); --rim-color: #7cb971; } 
+        .device[data-theme="blue"]  { --theme-bg: #5294e2; --lcd-text: #000000; --lcd-ghost: rgba(0, 0, 0, 0.02); --rim-color: #5294e2; } 
+        .device[data-theme="grey"]  { --theme-bg: #a6aeae; --lcd-text: #000000; --lcd-ghost: rgba(0, 0, 0, 0.02); --rim-color: #a6aeae; } 
+        .device[data-theme="dark-green"] { --theme-bg: #0d120d; --lcd-text: #00ff66; --lcd-ghost: rgba(0, 255, 102, 0.015); --rim-color: #00ff66; }
+        .device[data-theme="dark-cyan"]  { --theme-bg: #051414; --lcd-text: #00f5ff; --lcd-ghost: rgba(0, 245, 255, 0.015); --rim-color: #00f5ff; }
+        .device[data-theme="dark-amber"] { --theme-bg: #140f05; --lcd-text: #ff9f00; --lcd-ghost: rgba(255, 159, 0, 0.015); --rim-color: #ff9f00; }
+        .device[data-theme="dark-white"] { --theme-bg: #121315; --lcd-text: #ffffff; --lcd-ghost: rgba(255, 255, 255, 0.015); --rim-color: #ffffff; }
+        .device[data-theme="classic-lcd"] { --theme-bg: #8aa682; --lcd-text: #1a2018; --lcd-ghost: rgba(26, 32, 24, 0.05); --rim-color: #8aa682; }
+        .device[data-theme="retro-red"]   { --theme-bg: #0c0505; --lcd-text: #ff0a0a; --lcd-ghost: rgba(255, 10, 10, 0.04); --rim-color: #ff0a0a; }
+        .device[data-theme="neon-pink"]   { --theme-bg: #12040c; --lcd-text: #ff1493; --lcd-ghost: rgba(255, 20, 147, 0.04); --rim-color: #ff1493; }
+        .device[data-theme="cyberpunk"]   { --theme-bg: #090a14; --lcd-text: #fcee0a; --lcd-ghost: rgba(252, 238, 10, 0.04); --rim-color: #fcee0a; }
+        .device[data-theme="gold"]        { --theme-bg: #141108; --lcd-text: #ffc107; --lcd-ghost: rgba(255, 193, 7, 0.04); --rim-color: #ffc107; }
+        .device[data-theme="oled-white"]  { --theme-bg: #000000; --lcd-text: #ffffff; --lcd-ghost: rgba(255, 255, 255, 0.04); --rim-color: #ffffff; }
+
+        /* FIXED LANDSCAPE LAYOUT */
+        @media (orientation: landscape) {
+            body { padding: 0; margin: 0; background-color: #000000; }
+            .device {
+                max-width: none; width: 100vw; height: 100vh;
+                border-radius: 0; border: none; padding: 4px 6px; gap: 2px;
+                display: flex; flex-direction: column; justify-content: space-between;
+                box-shadow: inset 0 0 0 3px var(--rim-color); 
+            }
+            .bezel { flex: 1; padding: 2px; border-radius: 0; box-shadow: none; height: auto; }
+            .screen { flex: 1; height: 100%; border-radius: 0; padding: 4px 16px; display: flex; flex-direction: column; justify-content: flex-start; }
+            
+            .display-container { height: 68vh; max-width: 98%; gap: 4px; margin-top: 2vh; } 
+            .digit { max-width: none; height: 100%; }
+            .digit.small { max-width: none; height: 65%; margin-bottom: 10px; }
+            .colon-svg { flex: 0 0 2.5vw; height: 100%; }
+
+            .brand-panel {
+                display: flex !important; height: 2.5vh; margin: 0;
+                align-items: center; justify-content: center; gap: 8px;
+            }
+            .hardware-brand { font-size: 9px; letter-spacing: 3px; font-weight: 800; }
+            .panel-icon { width: 12px; height: 12px; } /* Controls size of both icons in landscape */
+
+            .controls { grid-template-columns: repeat(5, 1fr); height: 9.5vh; gap: 4px; margin-bottom: 2px; }
+            button { height: 100%; font-size: 11px; padding: 0; border-radius: 4px; }
+            
+            .mode-indicator { font-size: 11px; top: 6px; left: 16px; }
+            
+            .lap-container { 
+                font-size: 11.5px; 
+                max-height: 26px; 
+                width: 250px; 
+                bottom: 2px; 
+                right: 16px; 
+                opacity: 0.95;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="device" id="device" data-theme="green">
+        <div class="bezel">
+            <div class="screen" id="screen">
+                <div class="mode-indicator" id="mode-indicator">TIMER</div>
+                <div class="display-container" id="display"></div>
+                <div class="lap-container" id="lap-container"></div>
+
+                <div class="modal" id="modal">
+                    <div class="modal-input-wrapper">
+                        <input type="number" id="input-h" min="0" max="99" placeholder="00" inputmode="numeric" pattern="[0-9]*">
+                        <span>:</span>
+                        <input type="number" id="input-m" min="0" max="59" placeholder="00" inputmode="numeric" pattern="[0-9]*">
+                        <span>:</span>
+                        <input type="number" id="input-s" min="0" max="59" placeholder="00" inputmode="numeric" pattern="[0-9]*">
+                    </div>
+                    <div class="modal-grid" id="modal-grid-box"></div>
+                    <div class="modal-actions">
+                        <span class="btn-cancel" id="m-cancel">Cancel</span>
+                        <span class="btn-ok" id="m-ok">OK</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="brand-panel">
+            <div class="hardware-brand" id="brand-header">PRO TIMER</div>
+            
+            <svg class="panel-icon" id="btn-sound" viewBox="0 0 24 24" onclick="toggleSoundMaster()">
+                <path id="sound-path" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+            
+            <svg class="panel-icon" id="btn-fs" viewBox="0 0 24 24" onclick="toggleFullScreen()">
+                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+            </svg>
+        </div>
+
+        <div class="controls">
+            <button id="btn-start">Start<br>Stop</button>
+            <button id="btn-menu-lap">Menu</button>
+            <button id="btn-reset">Reset</button>
+            <button id="btn-theme">Theme</button>
+            <button id="btn-mode">Mode</button>
+        </div>
+    </div>
+
+    <script>
+        const segmentSvg = '<svg class="digit" viewBox="0 0 60 96">' +
+            '<polygon class="seg a" points="13,2 47,2 51,6 47,10 13,10 9,6" />' +
+            '<polygon class="seg b" points="52,8 56,12 56,44 52,48 48,44 48,12" />' +
+            '<polygon class="seg c" points="52,49 56,53 56,85 52,89 48,85 48,53" />' +
+            '<polygon class="seg d" points="13,87 47,87 51,91 47,95 13,95 9,91" />' +
+            '<polygon class="seg e" points="8,49 12,53 12,85 8,89 4,85 4,53" />' +
+            '<polygon class="seg f" points="8,8 12,12 12,44 8,48 4,44 4,12" />' +
+            '<polygon class="seg g" points="13,44 47,44 51,48 47,52 13,52 9,48" />' +
+            '</svg>';
+            
+        const colonSvg = '<svg class="colon-svg" viewBox="0 0 16 96">' +
+            '<circle class="colon-mark" cx="8" cy="34" r="5" />' +
+            '<circle class="colon-mark" cx="8" cy="62" r="5" />' +
+            '</svg>';
+
+        const digitMasks = { 0:63, 1:6, 2:91, 3:79, 4:102, 5:109, 6:125, 7:7, 8:127, 9:111 };
+        const segmentNames = ['a','b','c','d','e','f','g'];
+        
+        const themes = [
+            'green', 'classic-lcd', 'retro-red', 'blue', 'grey', 
+            'neon-pink', 'cyberpunk', 'gold', 'oled-white', 
+            'dark-green', 'dark-cyan', 'dark-amber', 'dark-white'
+        ];
+
+        const soundPathOn = "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z";
+        const soundPathOff = "M4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z";
+        const PERSIST_KEY = "LAVISH_TIMER_PERSIST_V2";
+
+        let activeLayout = ""; 
+        let mode = 'timer'; 
+        let theme = 'green';
+        let isRunning = false;
+        let isSoundEnabled = true;
+        
+        let timerSetMs = 0; 
+        let currentTimerMs = 0;
+        let stopwatchMs = 0; 
+        let laps = [];
+        
+        let lastTime = 0;
+        let lastSaveTime = 0;
+        let rafId = null;
+        let alarmTimeout = null;
+        let audioCtx = null;
+
+        function padZero(num, length) {
+            let str = String(num);
+            while (str.length < length) { str = '0' + str; }
+            return str;
+        }
+
+        function saveState() {
+            const stateObj = {
+                mode, theme, isRunning, isSoundEnabled,
+                timerSetMs, currentTimerMs, stopwatchMs, laps,
+                timestamp: Date.now()
+            };
+            try { sessionStorage.setItem(PERSIST_KEY, JSON.stringify(stateObj)); } catch(e){}
+        }
+
+        function restoreState() {
+            try {
+                const raw = sessionStorage.getItem(PERSIST_KEY);
+                if (!raw) return false;
+                const s = JSON.parse(raw);
+
+                mode = s.mode || 'timer';
+                theme = s.theme || 'green';
+                isSoundEnabled = (s.isSoundEnabled !== undefined) ? s.isSoundEnabled : true;
+                timerSetMs = s.timerSetMs || 0;
+                laps = s.laps || [];
+
+                document.getElementById('device').setAttribute('data-theme', theme);
+                updateSoundVisuals();
+
+                const now = Date.now();
+                const offlineDelta = now - (s.timestamp || now);
+
+                if (mode === 'timer') {
+                    document.getElementById('mode-indicator').innerText = 'TIMER';
+                    document.getElementById('btn-menu-lap').innerHTML = 'Menu';
+                    if (s.isRunning) {
+                        currentTimerMs = Math.max(0, (s.currentTimerMs || 0) - offlineDelta);
+                        isRunning = true; lastTime = now;
+                        rafId = requestAnimationFrame(loop);
+                    } else {
+                        currentTimerMs = s.currentTimerMs !== undefined ? s.currentTimerMs : timerSetMs;
+                    }
+                } else {
+                    document.getElementById('mode-indicator').innerText = 'STOPWATCH';
+                    document.getElementById('btn-menu-lap').innerHTML = 'Lap';
+                    if (s.isRunning) {
+                        stopwatchMs = (s.stopwatchMs || 0) + offlineDelta;
+                        isRunning = true; lastTime = now;
+                        rafId = requestAnimationFrame(loop);
+                    } else {
+                        stopwatchMs = s.stopwatchMs || 0;
+                    }
+                }
+                renderLaps(); renderDisplay();
+                return true;
+            } catch(e) { return false; }
+        }
+
+        function updateSoundVisuals() {
+            const pathEl = document.getElementById('sound-path');
+            const iconEl = document.getElementById('btn-sound');
+            if(!iconEl) return;
+            if (isSoundEnabled) {
+                if(pathEl) pathEl.setAttribute('d', soundPathOn);
+                iconEl.classList.remove('muted');
+            } else {
+                if(pathEl) pathEl.setAttribute('d', soundPathOff);
+                iconEl.classList.add('muted');
+            }
+        }
+
+        function checkAndBuildLayout(requiredLayout) {
+            if (activeLayout === requiredLayout) return;
+            activeLayout = requiredLayout;
+            const display = document.getElementById('display');
+            if (requiredLayout === "HMS") {
+                display.innerHTML = segmentSvg.replace('class="digit"', 'id="d1" class="digit"') +
+                                    segmentSvg.replace('class="digit"', 'id="d2" class="digit"') + colonSvg +
+                                    segmentSvg.replace('class="digit"', 'id="d3" class="digit"') +
+                                    segmentSvg.replace('class="digit"', 'id="d4" class="digit"') + colonSvg +
+                                    segmentSvg.replace('class="digit"', 'id="d5" class="digit"') +
+                                    segmentSvg.replace('class="digit"', 'id="d6" class="digit"');
+            } else if (requiredLayout === "MSms") {
+                display.innerHTML = segmentSvg.replace('class="digit"', 'id="d1" class="digit"') +
+                                    segmentSvg.replace('class="digit"', 'id="d2" class="digit"') + colonSvg +
+                                    segmentSvg.replace('class="digit"', 'id="d3" class="digit"') +
+                                    segmentSvg.replace('class="digit"', 'id="d4" class="digit"') + colonSvg +
+                                    segmentSvg.replace('class="digit"', 'id="d5" class="digit small"') +
+                                    segmentSvg.replace('class="digit"', 'id="d6" class="digit small"');
+            } else if (requiredLayout === "HMSms") {
+                display.innerHTML = segmentSvg.replace('class="digit"', 'id="d1" class="digit"') +
+                                    segmentSvg.replace('class="digit"', 'id="d2" class="digit"') + colonSvg +
+                                    segmentSvg.replace('class="digit"', 'id="d3" class="digit"') +
+                                    segmentSvg.replace('class="digit"', 'id="d4" class="digit"') + colonSvg +
+                                    segmentSvg.replace('class="digit"', 'id="d5" class="digit"') +
+                                    segmentSvg.replace('class="digit"', 'id="d6" class="digit"') + colonSvg +
+                                    segmentSvg.replace('class="digit"', 'id="d7" class="digit small"') +
+                                    segmentSvg.replace('class="digit"', 'id="d8" class="digit small"');
+            }
+        }
+
+        function setDigit(id, num) {
+            const mask = digitMasks[num];
+            const el = document.getElementById(id);
+            if (!el) return;
+            segmentNames.forEach((seg, i) => {
+                const segEl = el.querySelector('.' + seg);
+                if (mask & (1 << i)) segEl.classList.add('on');
+                else segEl.classList.remove('on');
+            });
+        }
+
+        function loop() {
+            if (!isRunning) return;
+            const now = Date.now();
+            const delta = now - lastTime;
+            lastTime = now;
+
+            if (mode === 'timer') {
+                currentTimerMs -= delta;
+                if (currentTimerMs <= 0) {
+                    currentTimerMs = 0;
+                    stopRunning(); triggerAlarm();
+                }
+            } else { stopwatchMs += delta; }
+
+            renderDisplay();
+
+            if (now - lastSaveTime > 500) { saveState(); lastSaveTime = now; }
+            rafId = requestAnimationFrame(loop);
+        }
+
+        function formatTime(totalMs) {
+            const h = Math.floor(totalMs / 3600000);
+            const m = Math.floor((totalMs % 3600000) / 60000);
+            const s = Math.floor((totalMs % 60000) / 1000);
+            const ms = Math.floor((totalMs % 1000) / 10);
+            return { h, m, s, ms };
+        }
+
+        function renderDisplay() {
+            const totalMs = mode === 'timer' ? currentTimerMs : stopwatchMs;
+            const { h, m, s, ms } = formatTime(totalMs);
+            
+            let targetLayout = "MSms"; 
+            
+            if (mode === 'timer') {
+                targetLayout = h > 0 ? "HMS" : "MSms";
+            } else if (mode === 'stopwatch' && h > 0) {
+                targetLayout = "HMSms"; 
+            }
+            
+            checkAndBuildLayout(targetLayout);
+            
+            const displayH = Math.min(99, h);
+            if (targetLayout === "HMS") {
+                setDigit('d1', Math.floor(displayH / 10)); setDigit('d2', displayH % 10);
+                setDigit('d3', Math.floor(m / 10));        setDigit('d4', m % 10);
+                setDigit('d5', Math.floor(s / 10));        setDigit('d6', s % 10);
+            } else if (targetLayout === "MSms") {
+                setDigit('d1', Math.floor(m / 10));        setDigit('d2', m % 10);
+                setDigit('d3', Math.floor(s / 10));        setDigit('d4', s % 10);
+                setDigit('d5', Math.floor(ms / 10));       setDigit('d6', ms % 10);
+            } else if (targetLayout === "HMSms") {
+                setDigit('d1', Math.floor(displayH / 10)); setDigit('d2', displayH % 10);
+                setDigit('d3', Math.floor(m / 10));        setDigit('d4', m % 10);
+                setDigit('d5', Math.floor(s / 10));        setDigit('d6', s % 10);
+                setDigit('d7', Math.floor(ms / 10));       setDigit('d8', ms % 10);
+            }
+
+            const blinkOn = !isRunning || (Math.floor(Date.now() / 500) % 2 === 0);
+            document.querySelectorAll('.colon-mark').forEach(col => {
+                if (blinkOn || !isRunning) col.classList.remove('off');
+                else col.classList.add('off');
+            });
+        }
+
+        function renderLaps() {
+            const container = document.getElementById('lap-container');
+            if (mode === 'timer' || laps.length === 0) { container.innerHTML = ''; return; }
+            container.innerHTML = laps.map((lap, i) => `L${i + 1} ${lap}`).join('<br>');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function toggleRunning() {
+            initAudio(); stopAlarm();
+            if(document.getElementById('modal').classList.contains('open')) return;
+            if (isRunning) stopRunning();
+            else {
+                if (mode === 'timer' && currentTimerMs <= 0) return;
+                isRunning = true; lastTime = Date.now();
+                saveState(); rafId = requestAnimationFrame(loop);
+            }
+        }
+
+        function stopRunning() {
+            isRunning = false; cancelAnimationFrame(rafId);
+            saveState(); renderDisplay();
+        }
+
+        function resetAll() {
+            initAudio(); stopRunning(); stopAlarm();
+            if (mode === 'timer') currentTimerMs = timerSetMs;
+            else { stopwatchMs = 0; laps = []; renderLaps(); }
+            saveState(); renderDisplay();
+        }
+
+        function cycleTheme() {
+            initAudio();
+            const currentIndex = themes.indexOf(theme);
+            theme = themes[(currentIndex + 1) % themes.length];
+            document.getElementById('device').setAttribute('data-theme', theme);
+            saveState(); playBeep();
+        }
+
+        function openModal() {
+            const { h, m, s } = formatTime(timerSetMs);
+            document.getElementById('input-h').value = h > 0 ? padZero(h, 2) : "";
+            document.getElementById('input-m').value = m > 0 ? padZero(m, 2) : "";
+            document.getElementById('input-s').value = s > 0 ? padZero(s, 2) : "";
+            document.getElementById('modal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('open');
+            document.querySelectorAll('.modal-input-wrapper input').forEach(input => input.blur());
+        }
+
+        function quickAdjust(secs) {
+            initAudio();
+            let h = parseInt(document.getElementById('input-h').value, 10) || 0;
+            let m = parseInt(document.getElementById('input-m').value, 10) || 0;
+            let s = parseInt(document.getElementById('input-s').value, 10) || 0;
+            let totalSecs = Math.min(359999, Math.max(0, (h * 3600) + (m * 60) + s + secs));
+            
+            document.getElementById('input-h').value = padZero(Math.floor(totalSecs / 3600), 2);
+            document.getElementById('input-m').value = padZero(Math.floor((totalSecs % 3600) / 60), 2);
+            document.getElementById('input-s').value = padZero(totalSecs % 60, 2);
+        }
+
+        function acceptModalInput() {
+            initAudio();
+            let h = parseInt(document.getElementById('input-h').value, 10) || 0;
+            let m = parseInt(document.getElementById('input-m').value, 10) || 0;
+            let s = parseInt(document.getElementById('input-s').value, 10) || 0;
+            let totalSecs = (h * 3600) + (m * 60) + s;
+            
+            if(totalSecs > 359999) totalSecs = 359999;
+            timerSetMs = totalSecs * 1000;
+            currentTimerMs = timerSetMs;
+            
+            closeModal(); saveState(); renderDisplay();
+        }
+
+        window.toggleSoundMaster = function() {
+            initAudio(); isSoundEnabled = !isSoundEnabled;
+            updateSoundVisuals(); saveState();
+            if (isSoundEnabled) playBeep();
+        };
+
+        // NEW: Fullscreen Toggle Logic
+        window.toggleFullScreen = function() {
+            initAudio();
+            const doc = window.document;
+            const docEl = doc.documentElement;
+
+            const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+            const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+            if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+                requestFullScreen.call(docEl);
+            }
+            else {
+                cancelFullScreen.call(doc);
+            }
+        };
+
+        function initAudio() { 
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+        }
+        
+        function playBeep() {
+            if (!audioCtx || !isSoundEnabled) return; 
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = 'square'; osc.frequency.setValueAtTime(2300, audioCtx.currentTime);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start();
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+            osc.stop(audioCtx.currentTime + 0.08);
+        }
+        
+        function triggerAlarm() { 
+            stopAlarm(); 
+            document.getElementById('screen').classList.add('flashing'); playBeep(); 
+            let count = 0;
+            alarmTimeout = setInterval(() => { playBeep(); count++; if (count > 25) stopAlarm(); }, 400); 
+        }
+        
+        function stopAlarm() { 
+            document.getElementById('screen').classList.remove('flashing'); 
+            if (alarmTimeout) { clearInterval(alarmTimeout); alarmTimeout = null; } 
+        }
+
+        window.addEventListener('beforeunload', saveState);
+        document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden') saveState(); });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!restoreState()) renderDisplay();
+
+            const brandEl = document.getElementById('brand-header');
+            if (brandEl) {
+                brandEl.addEventListener('click', function() {
+                    this.innerText = this.innerText === "PRO TIMER" ? "LAVISH EDITION" : "PRO TIMER";
+                });
+            }
+
+            document.getElementById('btn-start').addEventListener('click', toggleRunning);
+            document.getElementById('btn-reset').addEventListener('click', resetAll);
+            document.getElementById('btn-theme').addEventListener('click', cycleTheme);
+
+            document.getElementById('btn-mode').addEventListener('click', () => {
+                initAudio(); stopRunning(); stopAlarm(); closeModal();
+                mode = mode === 'timer' ? 'stopwatch' : 'timer';
+                document.getElementById('mode-indicator').innerText = mode.toUpperCase();
+                document.getElementById('btn-menu-lap').innerHTML = mode === 'timer' ? 'Menu' : 'Lap';
+                saveState(); renderLaps(); renderDisplay();
+            });
+
+            document.getElementById('btn-menu-lap').addEventListener('click', () => {
+                initAudio(); stopAlarm();
+                if (mode === 'timer') {
+                    if (document.getElementById('modal').classList.contains('open')) closeModal();
+                    else { stopRunning(); openModal(); }
+                } else {
+                    if (isRunning) {
+                        const { h, m, s, ms } = formatTime(stopwatchMs);
+                        const str = h > 0 ? `${padZero(h,2)}:${padZero(m,2)}:${padZero(s,2)}` : `${padZero(m,2)}:${padZero(s,2)}.${padZero(ms,2)}`;
+                        laps.push(str); saveState(); renderLaps();
+                    }
+                }
+            });
+
+            document.getElementById('m-cancel').addEventListener('click', closeModal);
+            document.getElementById('m-ok').addEventListener('click', acceptModalInput);
+
+            const gridBox = document.getElementById('modal-grid-box');
+            const cfgs = [
+                { t: '+1H', s: 3600 }, { t: '+5M', s: 300 }, { t: '+30S', s: 30 }, { t: '+5S', s: 5 },
+                { t: '-1H', s: -3600 }, { t: '-5M', s: -300 }, { t: '-30S', s: -30 }, { t: '-5S', s: -5 }
+            ];
+            cfgs.forEach(c => {
+                const b = document.createElement('button'); b.className = 'btn-quick'; b.innerText = c.t;
+                b.addEventListener('click', () => quickAdjust(c.s)); gridBox.appendChild(b);
+            });
+
+            const clr = document.createElement('button'); clr.className = 'btn-action'; clr.innerText = 'CLEAR MATRIX';
+            clr.addEventListener('click', () => {
+                initAudio();
+                document.getElementById('input-h').value = ""; document.getElementById('input-m').value = ""; document.getElementById('input-s').value = "";
+            });
+            gridBox.appendChild(clr);
+
+            document.querySelectorAll('.modal-input-wrapper input').forEach(inp => {
+                inp.addEventListener('input', (e) => {
+                    let max = parseInt(e.target.max, 10);
+                    if (parseInt(e.target.value, 10) > max) e.target.value = max;
+                    if (e.target.value.length > 2) e.target.value = e.target.value.slice(0, 2);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
