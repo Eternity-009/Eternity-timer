@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eternity-chrono-v2';
+const CACHE_NAME = 'eternity-chrono-v3';
 const urlsToCache = [
   './',
   './index.html',
@@ -21,7 +21,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Purane version ke cache ko delete karne ke liye taaki hamesha naya update mile
+// Purane version ke cache ko delete karne ke liye taaki hamesha naya update (Wake Lock) mile
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
