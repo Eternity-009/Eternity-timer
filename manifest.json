@@ -1,7 +1,7 @@
 {
   "id": "/?source=pwa",
-  "name": "Eternity Chrono: Timer & Stopwatch",
-  "short_name": "Eternity",
+  "name": "Eternity:Timer and Stopwatch",
+  "short_name": "Eternity Chrono",
   "description": "Premium Digital Timer and Stopwatch designed for maximum productivity.",
   "start_url": "./index.html",
   "display": "fullscreen",
