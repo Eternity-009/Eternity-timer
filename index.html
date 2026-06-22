@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Digital Timer By Lavish - Master Edition</title>
+    <meta name="author" content="Eternity-009">
+    <title>Eternity Chrono - Digital Timer & Stopwatch</title>
 <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -194,7 +195,7 @@
                 align-items: center; justify-content: center; gap: 8px;
             }
             .hardware-brand { font-size: 9px; letter-spacing: 3px; font-weight: 800; }
-            .panel-icon { width: 12px; height: 12px; } /* Controls size of both icons in landscape */
+            .panel-icon { width: 12px; height: 12px; }
 
             .controls { grid-template-columns: repeat(5, 1fr); height: 9.5vh; gap: 4px; margin-bottom: 2px; }
             button { height: 100%; font-size: 11px; padding: 0; border-radius: 4px; }
@@ -239,7 +240,7 @@
         </div>
 
         <div class="brand-panel">
-            <div class="hardware-brand" id="brand-header">PRO TIMER</div>
+            <div class="hardware-brand" id="brand-header">ETERNITY CHRONO</div>
             
             <svg class="panel-icon" id="btn-sound" viewBox="0 0 24 24" onclick="toggleSoundMaster()">
                 <path id="sound-path" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
@@ -260,6 +261,18 @@
     </div>
 
     <script>
+        // Security Shield & Console Warning
+        console.log("%cHold Up! ✋", "color: red; font-size: 40px; font-weight: bold;");
+        console.log("%cThis UI/UX Design and Code is proudly created and owned by Eternity-009. Please do not copy.", "color: #00ff00; font-size: 16px;");
+
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'F12' || e.keyCode === 123) e.preventDefault();
+          if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) e.preventDefault();
+          if (e.ctrlKey && e.key === 'U') e.preventDefault();
+        });
+        document.addEventListener('copy', function(e) { e.preventDefault(); });
+
         const segmentSvg = '<svg class="digit" viewBox="0 0 60 96">' +
             '<polygon class="seg a" points="13,2 47,2 51,6 47,10 13,10 9,6" />' +
             '<polygon class="seg b" points="52,8 56,12 56,44 52,48 48,44 48,12" />' +
@@ -566,7 +579,7 @@
             if (isSoundEnabled) playBeep();
         };
 
-        // NEW: Fullscreen Toggle Logic
+        // Fullscreen Toggle Logic
         window.toggleFullScreen = function() {
             initAudio();
             const doc = window.document;
@@ -619,7 +632,7 @@
             const brandEl = document.getElementById('brand-header');
             if (brandEl) {
                 brandEl.addEventListener('click', function() {
-                    this.innerText = this.innerText === "PRO TIMER" ? "LAVISH EDITION" : "PRO TIMER";
+                    this.innerText = this.innerText === "ETERNITY CHRONO" ? "PREMIUM EDITION" : "ETERNITY CHRONO";
                 });
             }
 
