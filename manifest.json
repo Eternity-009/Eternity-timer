@@ -1,14 +1,20 @@
 {
-  "name": "Digital Timer Pro",
-  "short_name": "Pro Timer",
-  "start_url": "./index.html",
+  "name": "Eternity Chrono",
+  "short_name": "Eternity",
+  "start_url": "./",
   "display": "fullscreen",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "any",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "./icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
