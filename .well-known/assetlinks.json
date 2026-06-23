@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.eternity_009.twa",
+        "sha256_cert_fingerprints": ["98:90:13:A6:DB:F7:F8:75:D4:B3:35:E5:6A:F9:B3:A9:47:35:D4:81:81:C4:16:A8:AC:69:A6:FB:0C:25:64:C8"]
+      }
+    }]
