@@ -1,9 +1,10 @@
-const CACHE_NAME = 'eternity-chrono-v3';
+const CACHE_NAME = 'eternity-chrono-v4'; // Version v4 kar diya hai taaki naya force update ho
 const urlsToCache = [
   './',
   './index.html',
   './icon.png',
-  './manifest.json'
+  './manifest.json',
+  './sw.js'
 ];
 
 self.addEventListener('install', event => {
@@ -17,7 +18,14 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
-      .then(response => response || fetch(event.request))
+      .then(response => {
+        // Agar file cache mein hai toh wahi se do (Offline mode)
+        if (response) {
+          return response;
+        }
+        // Warna internet se download karo
+        return fetch(event.request);
+      })
   );
 });
 
